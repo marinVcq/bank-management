@@ -1,38 +1,44 @@
+#define _WIN32_WINNT 0x0500
+#include <windows.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <wchar.h>
 
-#define FILENAME_SIZE 50
-#define ID_SIZE 50
+#define PATH_SIZE 50
+#define ACCOUNT_NO_SIZE 50
 #define PASSWORD_SIZE 50
 #define NAME_SIZE 50
 #define PHONE_SIZE 50
 
 /* User data structure */
-struct user
+struct customer
 {
-    char username[25];
-    char phone_number[25];
-    char account_number[ID_SIZE];
+    char name[50];
+    char phone_number[50];
+    char account_number[ACCOUNT_NO_SIZE];
     char password[PASSWORD_SIZE];
     float balance;
 };
-/**
- * This function checks whether a file with a certain name exists in a directory. The file name is constructed by concatenating the string "./client/"
- * with the value of the temp parameter (a copy) which is appending the string ".dat" to the resulting string. The function then tries to open the file reading only,
- * and if it is successful, it closes the file and returns 1, indicating that the file exists. If the file cannot be opened, the function returns 0,
- * indicating that the file does not exist.
- */
-int account_exist(char account_number[ID_SIZE])
+
+int exit_satus = 0;
+
+void print_spaces(int n)
 {
-    char temp[ID_SIZE];
-    char current_filename[FILENAME_SIZE] = "./client/";
-    strcpy(temp, account_number);
-    strcat(current_filename, strcat(temp, ".dat"));
+    for (int i = 0; i < n; i++)
+        printf(" ");
+}
+
+int check_account(char customer_account_no[ACCOUNT_NO_SIZE])
+{
+    char temp[ACCOUNT_NO_SIZE];
+    char path[PATH_SIZE] = "./client/";
+    strcpy(temp, customer_account_no);
+    strcat(path, strcat(temp, ".dat"));
     FILE *file;
 
-    if ((file = fopen(current_filename, "r")))
+    if ((file = fopen(path, "r")))
     {
         fclose(file);
         return 1;
@@ -40,105 +46,121 @@ int account_exist(char account_number[ID_SIZE])
     return 0;
 }
 
-int password_verif(char account_number[ID_SIZE], char password[PASSWORD_SIZE])
+int check_password(char customer_account_no[ACCOUNT_NO_SIZE], char password[PASSWORD_SIZE])
 {
-    char temp[ID_SIZE];
-    struct user current_user;
-    char filename[FILENAME_SIZE] = "./client/";
-    strcpy(temp, account_number);
-    strcat(filename, strcat(temp, ".dat"));
+    char temp[ACCOUNT_NO_SIZE];
+    struct customer u;
+    char path[PATH_SIZE] = "./client/";
     FILE *file;
-    if ((file = fopen(filename, "r")))
+
+    strcpy(temp, customer_account_no);
+    strcat(path, strcat(temp, ".dat"));
+
+    if ((file = fopen(path, "r")))
     {
-        fread(&current_user, sizeof(struct user), 1, file);
+        fread(&u, sizeof(struct customer), 1, file);
         fclose(file);
 
-        if (!strcmp(password, current_user.password))
+        if (!strcmp(password, u.password))
         {
             return 1;
         }
-        else
-        {
-            return 0;
-        }
-    }
-    else
-    {
         return 0;
     }
+    return 0;
 }
 
-void display_information(struct user u)
+void customer_info(char customer_account_no[ACCOUNT_NO_SIZE])
 {
+    char temp[ACCOUNT_NO_SIZE];
+    struct customer u;
+    char path[PATH_SIZE] = "./client/";
+    FILE *file;
+
+    strcpy(temp, customer_account_no);
+    strcat(path, strcat(temp, ".dat"));
+
+    if ((file = fopen(path, "r")))
+    {
+        fread(&u, sizeof(struct customer), 1, file);
+        fclose(file);
+    }
+
     printf("\n\n-------------------------------");
     printf("\n\nInformation du compte %s", u.account_number);
-    printf("\n\nTitulaire du compte: %s", u.username);
+    printf("\n\nTitulaire du compte: %s", u.name);
     printf("\nNumero de compte: %s", u.account_number);
     printf("\nNumero de telephone: %s", u.phone_number);
     printf("\nSolde: %f", u.balance);
     printf("\n-------------------------------\n\n");
 }
 
-struct user get_data(char account_number[ID_SIZE])
+struct customer get_record(char customer_account_no[ACCOUNT_NO_SIZE])
 {
-    char temp[ID_SIZE];
-    struct user u;
-    char filename[FILENAME_SIZE] = "./client/";
-    strcpy(temp, account_number);
-    strcat(filename, strcat(temp, ".dat"));
+    char temp[ACCOUNT_NO_SIZE];
+    struct customer u;
+    char path[PATH_SIZE] = "./client/";
     FILE *file;
-    if ((file = fopen(filename, "r")))
+
+    strcpy(temp, customer_account_no);
+    strcat(path, strcat(temp, ".dat"));
+
+    if ((file = fopen(path, "r")))
     {
-        fread(&u, sizeof(struct user), 1, file);
+        fread(&u, sizeof(struct customer), 1, file);
         fclose(file);
         return u;
     }
     else
     {
-        fprintf(stderr, "Indisponible...\n");
+        fprintf(stderr, "Donnee indisponible\n");
         exit(-1);
     }
 }
 
-struct user create_account()
+void add_customer()
 {
 
-    struct user new_user;
-    char path[FILENAME_SIZE];
-    char temp[ID_SIZE];
-    FILE *fp;
+    struct customer new_customer;
+    char path[PATH_SIZE] = "./client/";
+    char temp[ACCOUNT_NO_SIZE];
+    FILE *file;
 
-    printf("Indiquer un identifiant:\t"); /* Pourra être generer automatiquement */
-    scanf("%s", new_user.account_number);
+    printf("Indiquer un identifiant:\t");
+    scanf("%s", new_customer.account_number);
 
     printf("Indiquer un nom:\t");
-    scanf("%s", new_user.username);
+    scanf("%s", new_customer.name);
 
     printf("Indiquer un numero de telephone:\t");
-    scanf("%s", new_user.phone_number);
+    scanf("%s", new_customer.phone_number);
 
-    printf("Indiquer un mot de passe:\t"); /* Pourra être generer automatiquement */
-    scanf("%s", new_user.password);
+    printf("Indiquer un mot de passe:\t");
+    scanf("%s", new_customer.password);
 
-    new_user.balance = 0;
+    new_customer.balance = 0;
 
-    strcpy(path, "./client/");
-    strcpy(temp, new_user.account_number);
+    strcpy(temp, new_customer.account_number);
     strcat(path, strcat(temp, ".dat"));
-    fp = fopen(path, "w");
-    fwrite(&new_user, sizeof(struct user), 1, fp);
-    if (fwrite != 0)
+
+    if ((file = fopen(path, "w")))
     {
-        printf("\nCompte numero %s ajoute!", &new_user.account_number);
-        display_information(new_user);
-        return new_user;
+        fwrite(&new_customer, sizeof(struct customer), 1, file);
+        if (fwrite != 0)
+        {
+            printf("\n\nCompte numero %s ajoute!", &new_customer.account_number);
+            fclose(file);
+            customer_info(new_customer.account_number);
+        }
+        else
+        {
+            fprintf(stderr, "\nErreur dans la création du compte\n");
+        }
     }
     else
     {
         fprintf(stderr, "\nErreur dans la création du compte\n");
-        exit(-1);
     }
-    fclose(fp);
 }
 
 void get_date()
@@ -148,145 +170,275 @@ void get_date()
     printf("\nLe %02d-%02d-%02d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
 }
 
-int withdraw(struct user u)
+int withdraw(char customer_account_no[ACCOUNT_NO_SIZE])
 {
+    /* get up-to-date recorded information */
+    char temp[ACCOUNT_NO_SIZE];
+    struct customer u;
+    char path[PATH_SIZE] = "./client/";
+    FILE *file;
+
+    strcpy(temp, customer_account_no);
+    strcat(path, strcat(temp, ".dat"));
+
+    if ((file = fopen(path, "r")))
+    {
+        fread(&u, sizeof(struct customer), 1, file);
+        fclose(file);
+    }
+
     float amount;
     printf("\n\nMontant du retrait: \t");
     scanf("%f", &amount);
-    u.balance += amount;
+    u.balance -= amount;
 
-    /* Update data */
-    char temp[ID_SIZE];
-    char filename[FILENAME_SIZE] = "./client/";
-    strcpy(temp, u.account_number);
-    strcat(filename, strcat(temp, ".dat"));
-    FILE *file;
-    if ((file = fopen(filename, "w")))
+    /* Update recorded information */
+    if ((file = fopen(path, "w")))
     {
-        fwrite(&u, sizeof(struct user), 1, file);
+        fwrite(&u, sizeof(struct customer), 1, file);
         if (fwrite != NULL)
         {
             fclose(file);
             return 1;
         }
+        else
+        {
+            fprintf(stderr, "\nRetrait impossible\n");
+            return 0;
+        }
+    }
+    return 0;
+}
+
+int get_balance(char customer_account_no[ACCOUNT_NO_SIZE])
+{
+    /* get up-to-date recorded information */
+    char temp[ACCOUNT_NO_SIZE];
+    struct customer u;
+    char path[PATH_SIZE] = "./client/";
+    FILE *file;
+
+    strcpy(temp, customer_account_no);
+    strcat(path, strcat(temp, ".dat"));
+
+    if ((file = fopen(path, "r")))
+    {
+        fread(&u, sizeof(struct customer), 1, file);
+        fclose(file);
+        printf("\nVotre solde: %f", u.balance);
+        return 1;
     }
     else
     {
+        fprintf(stderr, "Solde indisponible\n");
         return 0;
     }
 }
 
-char get_balance(char account_number[ID_SIZE])
+void print_image(int x_pos, char *fn)
 {
-    char temp[ID_SIZE];
-    struct user u;
-    char filename[FILENAME_SIZE] = "./client/";
-    strcpy(temp, account_number);
-    strcat(filename, strcat(temp, ".dat"));
+
     FILE *file;
-    if ((file = fopen(filename, "r")))
+    char *filename = fn;
+
+    if ((file = fopen(filename, "r")) == NULL)
     {
-        fread(&u, sizeof(struct user), 1, file);
-        fclose(file);
-        return u.balance;
+        fprintf(stderr, "impossible d'ouvrir le fichier : %s\n", filename);
     }
     else
     {
-        fprintf(stderr, "Solde indisponible...\n");
-        exit(-1);
+        char read_string[256];
+        while (fgets(read_string, sizeof(read_string), file) != NULL)
+        {
+            print_spaces(x_pos);
+            printf("%s", read_string);
+        }
     }
+
+    fclose(file);
 }
 
-int main()
+void menu(struct customer current_customer)
 {
-    struct user usr;
-    FILE *fp;
-    char filename[FILENAME_SIZE];
-    int opt;
-    char id[ID_SIZE];
-    char password[PASSWORD_SIZE];
-    int connected = 0;
-
     system("cls");
-    printf("Effectuer une operation: ");
-    printf("\n\n1. Creer un compte");
-    printf("\n2. Se connecter a mon espace");
+    int columns, columns_by_2;
+
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    columns_by_2 = columns / 2;
+
+    print_spaces(columns_by_2 - 24);
+    print_image(columns_by_2 - 24, "title-image.txt");
+
+    int opt;
+
+    printf("\nBienvenue dans votre espace %s", current_customer.name);
+    printf("\n\nEffectuer une operation: ");
+    printf("\n\n1. Effectuer un Retrait");
+    printf("\n2. Consulter mon solde");
+    printf("\n3. Effectuer un virement");
+    printf("\n4. Afficher mes informations");
+    printf("\n5. Mofidier mon mot de passe");
+    printf("\n6. Terminer l'operation en cours");
 
     printf("\n\nSelectionnez une option: \t");
     scanf("%d", &opt);
 
-    if (opt == 1)
+    switch (opt)
     {
-
-        /* Creation d'un compte */
-        system("cls");
-        usr = create_account();
+    case 1:
+        withdraw(current_customer.account_number);
+        break;
+    case 2:
+        get_balance(current_customer.account_number);
+        break;
+    case 3:
+        break;
+    case 4:
+        customer_info(current_customer.account_number);
+        break;
+    case 5:
+        break;
+    case 6:
+        break;
     }
-    else if (opt == 2)
-    {
-        system("cls");
-        printf("\nVeuillez indiquer votre numero de compte: \t");
-        scanf("%s", &id);
-        /* Verification de l'identifiant */
+}
 
-        if (account_exist(id))
+void SetConsoleColour(WORD *Attributes, DWORD Colour)
+{
+    CONSOLE_SCREEN_BUFFER_INFO Info;
+    HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+    GetConsoleScreenBufferInfo(hStdout, &Info);
+    *Attributes = Info.wAttributes;
+    SetConsoleTextAttribute(hStdout, Colour);
+}
+
+void ResetConsoleColour(WORD Attributes)
+{
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), Attributes);
+}
+
+int main()
+{
+    /* Activer l'accés en lecture/écriture */
+    HANDLE writeHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE readHandle = GetStdHandle(STD_INPUT_HANDLE);
+    WORD Attributes = 0;
+
+    while (exit_satus == 0)
+    {
+        int opt;
+        char account_number[ACCOUNT_NO_SIZE];
+        char password[PASSWORD_SIZE];
+        int connected = 0;
+        int columns, columns_by_2;
+        int window_width = 70;
+        int window_height = 40;
+        int selected_row = 1;
+
+        SetConsoleTitle("C-ATM Management by Marinos");
+
+        CONSOLE_FONT_INFOEX cfi;
+        cfi.cbSize = sizeof(CONSOLE_FONT_INFOEX);
+        cfi.nFont = 0;
+        cfi.dwFontSize.X = 0;
+        cfi.dwFontSize.Y = 14;
+        // cfi.FontFamily = FF_DONTCARE;
+        cfi.FontWeight = 400; // FW_NORMAL
+        wcscpy(cfi.FaceName, L"Consolas");
+        SetCurrentConsoleFontEx(writeHandle, FALSE, &cfi);
+
+        /* set up the size */
+        COORD coord;
+        coord.X = window_width;
+        coord.Y = window_height;
+
+        SMALL_RECT rect;
+        rect.Top = 0;
+        rect.Left = 0;
+        rect.Bottom = window_height - 1;
+        rect.Right = window_width - 1;
+
+        SetConsoleScreenBufferSize(writeHandle, coord);
+        SetConsoleWindowInfo(writeHandle, TRUE, &rect);
+
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(writeHandle, &csbi);
+        columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+        columns_by_2 = columns / 2;
+
+        system("cls");
+        system("color 17");
+        print_spaces(columns_by_2 - 24);
+        print_image(columns_by_2 - 24, "title-image.txt");
+        printf("\n\n");
+
+        print_spaces(columns_by_2 - 15);
+        printf("\xB2\xB2\xB2\xB2 EFFECTUER UNE OPERATION \xB2\xB2\xB2\xB2\n\n");
+
+        print_spaces(columns_by_2 - 12);
+
+        SetConsoleColour(&Attributes, FOREGROUND_INTENSITY | FOREGROUND_BLUE);
+        printf("1. CREER UN COMPTE\n\n");
+        ResetConsoleColour(Attributes);
+
+        print_spaces(columns_by_2 - 12);
+        printf("2. ACCEDER A MON ESPACE\n\n");
+
+        print_spaces(columns_by_2 - 12);
+        printf("3. QUITTER\n\n");
+
+        print_image(columns_by_2 - 26, "footer.txt");
+        printf("\n\n");
+        print_spaces(columns_by_2 - 14);
+        printf("\xDB\xDB\xDB SELECTIONNEZ UNE OPTION \xDB\xDB\xDB ");
+        print_spaces(columns_by_2 - 12);
+        scanf("%d", &opt);
+
+        if (opt == 1)
         {
-            printf("\nMot de passe: \t");
-            scanf("%s", &password);
-            /* Verification du mot de passe  */
-            if ((password_verif(id, password)))
+            system("cls");
+            add_customer();
+        }
+        else if (opt == 2)
+        {
+            system("cls");
+            printf("\nVeuillez indiquer votre numero de compte: \t");
+            scanf("%s", &account_number);
+
+            if (check_account(account_number))
             {
-                connected = 1;
-                system("cls");
-                usr = get_data(id);
-                printf("\nBienvenue dans votre espace %s", usr.username);
-                while (connected == 1)
+                printf("\nMot de passe: \t");
+                scanf("%s", &password);
+
+                if ((check_password(account_number, password)))
+                {
+                    connected = 1;
+                    system("cls");
+
+                    while (connected == 1)
+                    {
+                        system("cls");
+                        struct customer current_customer = get_record(account_number);
+
+                        menu(current_customer);
+
+                        printf("\n\nContinuer la navigation ? [1/0] : \t");
+                        scanf("%d", &connected);
+                    }
+                }
+                else
                 {
                     system("cls");
-                    printf("Effectuer une operation: ");
-                    printf("\n\n1. Retrait");
-                    printf("\n2. Consulter mon solde");
-                    printf("\n3. Effectuer un virement");
-                    printf("\n4. Afficher mes informations");
-                    printf("\n5. Mofidier mon mot de passe");
-                    printf("\n6. Terminer l'operation en cours");
-
-                    printf("\n\nSelectionnez une option: \t");
-                    scanf("%d", &opt);
-
-                    switch (opt)
-                    {
-                    case 1:
-                        if (withdraw(usr))
-                        {
-                            printf("\nRetrait effectue avec succes!");
-                        }
-                        break;
-
-                    case 2:
-                        printf("\n\nVotre solde: %d", get_balance(usr.account_number));
-                        get_date();
-                        break;
-                    case 4:
-                        display_information(usr);
-                        get_date();
-                        break;
-                    }
-
-                    printf("\n\nContinuer la navigation ? [1/0] : \t");
-                    scanf("%d", &connected);
+                    printf("\nLe mot de passe est incorect!");
                 }
             }
             else
             {
                 system("cls");
-                printf("\nLe mot de passe est incorect!");
+                printf("\nCE COMMPTE N'EXISTE PAS!");
             }
-        }
-        else
-        {
-            system("cls");
-            printf("\nCE COMMPTE N'EXISTE PAS!");
         }
     }
 }

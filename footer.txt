@@ -1,0 +1,6 @@
+ __________________________________________________
+|                                                  |
+| Create a new account, edit account information,  |
+| do some transactions,see and manage transactions | 
+| and check your balance. I hope you'll enjoy.     |
+|__________________________________________________|

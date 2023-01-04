@@ -5,12 +5,17 @@
 #include <stdlib.h>
 #include <time.h>
 #include <wchar.h>
+#include <conio.h>
 
 #define PATH_SIZE 50
 #define ACCOUNT_NO_SIZE 50
 #define PASSWORD_SIZE 50
 #define NAME_SIZE 50
 #define PHONE_SIZE 50
+#define CONSOLE_WIDTH 80
+#define CONSOLE_HEIGHT 50
+#define JUMP "\n"
+#define DOUBLE_JUMP "\n\n"
 
 /* User data structure */
 struct customer
@@ -22,12 +27,73 @@ struct customer
     float balance;
 };
 
-int exit_satus = 0;
+int exit_status = 0;
+char account_number[ACCOUNT_NO_SIZE];
+char password[PASSWORD_SIZE];
+int connected = 0;
 
 void print_spaces(int n)
 {
     for (int i = 0; i < n; i++)
         printf(" ");
+}
+
+int get_middle()
+{
+    HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(hStdout, &csbi);
+    int columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    int columns_by_2 = columns / 2;
+    return columns_by_2;
+}
+
+void print_image(int x_pos, char *fn)
+{
+
+    FILE *file;
+    char *filename = fn;
+
+    if ((file = fopen(filename, "r")) == NULL)
+    {
+        fprintf(stderr, "impossible d'ouvrir le fichier : %s\n", filename);
+    }
+    else
+    {
+        char read_string[256];
+        while (fgets(read_string, sizeof(read_string), file) != NULL)
+        {
+            print_spaces(x_pos);
+            printf("%s", read_string);
+        }
+    }
+
+    fclose(file);
+}
+
+void fordelay(int j)
+{
+    int i, k;
+    for (i = 0; i < j; i++)
+        k = i;
+}
+
+void loading_screen()
+{
+
+    int columns_by_2 = get_middle();
+    system("cls");
+    print_spaces(columns_by_2 - 24);
+    print_image(columns_by_2 - 24, "title-image.txt");
+    printf("\n\n\n\n\n\n\n\n");
+    print_spaces(columns_by_2 - 3);
+    printf("LOADING");
+    for (int i = 0; i <= 6; i++)
+    {
+        fordelay(200000000);
+        printf(".");
+    }
+    system("cls");
 }
 
 int check_account(char customer_account_no[ACCOUNT_NO_SIZE])
@@ -118,8 +184,10 @@ struct customer get_record(char customer_account_no[ACCOUNT_NO_SIZE])
     }
 }
 
-void add_customer()
+void create_account()
 {
+
+    loading_screen();
 
     struct customer new_customer;
     char path[PATH_SIZE] = "./client/";
@@ -235,32 +303,10 @@ int get_balance(char customer_account_no[ACCOUNT_NO_SIZE])
     }
 }
 
-void print_image(int x_pos, char *fn)
-{
-
-    FILE *file;
-    char *filename = fn;
-
-    if ((file = fopen(filename, "r")) == NULL)
-    {
-        fprintf(stderr, "impossible d'ouvrir le fichier : %s\n", filename);
-    }
-    else
-    {
-        char read_string[256];
-        while (fgets(read_string, sizeof(read_string), file) != NULL)
-        {
-            print_spaces(x_pos);
-            printf("%s", read_string);
-        }
-    }
-
-    fclose(file);
-}
-
 void menu(struct customer current_customer)
 {
-    system("cls");
+    loading_screen();
+
     int columns, columns_by_2;
 
     CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -319,57 +365,209 @@ void ResetConsoleColour(WORD Attributes)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), Attributes);
 }
 
+void login_account()
+{
+
+    loading_screen();
+
+    int columns_by_2 = get_middle();
+
+    /* Display banner */
+    print_spaces(columns_by_2 - 24);
+    print_image(columns_by_2 - 24, "title-image.txt");
+    printf("\n\n");
+
+    /* Formulaire */
+    print_spaces(columns_by_2 - 24);
+    printf("NUMERO DE COMPTE: \t");
+    scanf("%s", &account_number);
+
+    if (check_account(account_number))
+    {
+        printf(DOUBLE_JUMP);
+        print_spaces(columns_by_2 - 24);
+        printf("MOT DE PASSE: \t");
+        scanf("%s", &password);
+
+        if ((check_password(account_number, password)))
+        {
+            connected = 1;
+
+            while (connected == 1)
+            {
+                struct customer current_customer = get_record(account_number);
+
+                menu(current_customer);
+
+                printf("\n\nContinuer la navigation ? [1/0] : \t");
+                scanf("%d", &connected);
+            }
+        }
+        else
+        {
+            printf(DOUBLE_JUMP);
+            print_spaces(columns_by_2 - 24);
+            printf("MOT DE PASSE INCORRECT!");
+            printf(DOUBLE_JUMP);
+            print_spaces(columns_by_2 - 24);
+            printf("Appuyer sur une touche pour quitter...");
+            getch();
+            login_account();
+        }
+    }
+    else
+    {
+        printf(DOUBLE_JUMP);
+        print_spaces(columns_by_2 - 24);
+        printf("NUMERE DE COMPTE INEXISTANT OU INCORRECT!");
+        printf(DOUBLE_JUMP);
+        print_spaces(columns_by_2 - 24);
+        printf("Appuyer sur une touche pour quitter...");
+        getch();
+        login_account();
+    }
+}
+
+void handle_selection(int selector)
+{
+    switch (selector)
+    {
+    case 1:
+        create_account();
+        break;
+    case 2:
+        login_account();
+        break;
+    case 3:
+        exit_status = 1;
+        break;
+    }
+}
+
 int main()
 {
+    int selected_option = 1;
+
     /* Activer l'accés en lecture/écriture */
-    HANDLE writeHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-    HANDLE readHandle = GetStdHandle(STD_INPUT_HANDLE);
-    WORD Attributes = 0;
+    HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
 
-    while (exit_satus == 0)
+    /* Flush stdout buffer */
+    FlushFileBuffers(hStdout);
+
+    /* Parametre utilisateur */
+    CONSOLE_SCREEN_BUFFER_INFO console_info;
+    CONSOLE_CURSOR_INFO cursor_info;
+    CONSOLE_CURSOR_INFO old_cursor_info;
+    WORD old_text_attributes = 0;
+
+    /* Sauvegarder les parametres de la console */
+    GetConsoleScreenBufferInfo(hStdout, &console_info);
+    GetConsoleCursorInfo(hStdout, &cursor_info);
+    old_text_attributes = console_info.wAttributes;
+    old_cursor_info = cursor_info;
+
+    /* Parametrage la console */
+    system("cls");
+    SetConsoleTitle("C-ATM Management by Marinos");
+
+    COORD coord;
+    coord.X = CONSOLE_WIDTH;
+    coord.Y = CONSOLE_HEIGHT;
+
+    SMALL_RECT rect;
+    rect.Top = 0;
+    rect.Left = 0;
+    rect.Bottom = CONSOLE_HEIGHT - 1;
+    rect.Right = CONSOLE_WIDTH - 1;
+
+    SetConsoleScreenBufferSize(hStdout, coord);
+    SetConsoleWindowInfo(hStdout, TRUE, &rect);
+
+    CONSOLE_FONT_INFOEX cfi;
+    cfi.cbSize = sizeof(CONSOLE_FONT_INFOEX);
+    cfi.nFont = 0;
+    cfi.dwFontSize.X = 0;
+    cfi.dwFontSize.Y = 14;
+    cfi.FontFamily = FF_DONTCARE;
+    cfi.FontWeight = 400; // FW_NORMAL
+    wcscpy(cfi.FaceName, L"Consolas");
+    SetCurrentConsoleFontEx(hStdout, FALSE, &cfi);
+
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(hStdout, &csbi);
+    int columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    int columns_by_2 = columns / 2;
+
+    /* Parametrage des modes d'utilisation de la mémoire tampon */
+    DWORD dwOutMode = 0;
+    DWORD dwInMode = 0;
+
+    GetConsoleMode(hStdout, &dwOutMode);
+    GetConsoleMode(hStdin, &dwInMode);
+
+    /**
+     *  Possibilité d'ajouter des modes:
+     *  - dwOutMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN;
+     *  - dwInMode |= ENABLE_VIRTUAL_TERMINAL_INPUT;
+     */
+
+    SetConsoleMode(hStdout, dwOutMode);
+    SetConsoleMode(hStdin, dwInMode);
+
+    /* Parametrage du curseur */
+    cursor_info.bVisible = FALSE;
+    SetConsoleCursorInfo(hStdout, &cursor_info);
+
+    loading_screen();
+
+    while (exit_status == 0)
     {
-        int opt;
-        char account_number[ACCOUNT_NO_SIZE];
-        char password[PASSWORD_SIZE];
-        int connected = 0;
-        int columns, columns_by_2;
-        int window_width = 70;
-        int window_height = 40;
-        int selected_row = 1;
+        /* recuperer input utilisateur */
+        INPUT_RECORD rc;
+        DWORD dwRead = 0;
 
-        SetConsoleTitle("C-ATM Management by Marinos");
+        ReadConsoleInputW(hStdin, &rc, 1, &dwRead);
 
-        CONSOLE_FONT_INFOEX cfi;
-        cfi.cbSize = sizeof(CONSOLE_FONT_INFOEX);
-        cfi.nFont = 0;
-        cfi.dwFontSize.X = 0;
-        cfi.dwFontSize.Y = 14;
-        // cfi.FontFamily = FF_DONTCARE;
-        cfi.FontWeight = 400; // FW_NORMAL
-        wcscpy(cfi.FaceName, L"Consolas");
-        SetCurrentConsoleFontEx(writeHandle, FALSE, &cfi);
+        /* Determiner action utilisateur aprés que la touche soit relachée */
 
-        /* set up the size */
-        COORD coord;
-        coord.X = window_width;
-        coord.Y = window_height;
+        if (rc.Event.KeyEvent.bKeyDown == FALSE)
+        {
+            switch (rc.Event.KeyEvent.wVirtualKeyCode)
+            {
+            case 0x51:
+                exit_status = 1;
+                break;
+            case VK_UP:
+                if (selected_option - 1 >= 1)
+                {
+                    selected_option -= 1;
+                }
+                else
+                {
+                    selected_option = 3;
+                }
+                break;
+            case VK_DOWN:
+                if (selected_option + 1 <= 3)
+                {
+                    selected_option += 1;
+                }
+                else
+                {
+                    selected_option = 1;
+                }
+                break;
+            case VK_RETURN:
+                handle_selection(selected_option);
+                break;
+            }
+        }
 
-        SMALL_RECT rect;
-        rect.Top = 0;
-        rect.Left = 0;
-        rect.Bottom = window_height - 1;
-        rect.Right = window_width - 1;
-
-        SetConsoleScreenBufferSize(writeHandle, coord);
-        SetConsoleWindowInfo(writeHandle, TRUE, &rect);
-
-        CONSOLE_SCREEN_BUFFER_INFO csbi;
-        GetConsoleScreenBufferInfo(writeHandle, &csbi);
-        columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-        columns_by_2 = columns / 2;
-
+        /* Clear screen */
         system("cls");
-        system("color 17");
+
+        /* Display banner */
         print_spaces(columns_by_2 - 24);
         print_image(columns_by_2 - 24, "title-image.txt");
         printf("\n\n");
@@ -377,68 +575,53 @@ int main()
         print_spaces(columns_by_2 - 15);
         printf("\xB2\xB2\xB2\xB2 EFFECTUER UNE OPERATION \xB2\xB2\xB2\xB2\n\n");
 
-        print_spaces(columns_by_2 - 12);
-
-        SetConsoleColour(&Attributes, FOREGROUND_INTENSITY | FOREGROUND_BLUE);
-        printf("1. CREER UN COMPTE\n\n");
-        ResetConsoleColour(Attributes);
-
-        print_spaces(columns_by_2 - 12);
-        printf("2. ACCEDER A MON ESPACE\n\n");
-
-        print_spaces(columns_by_2 - 12);
-        printf("3. QUITTER\n\n");
+        switch (selected_option)
+        {
+        case 1:
+            print_spaces(columns_by_2 - 12);
+            SetConsoleTextAttribute(hStdout, FOREGROUND_INTENSITY | FOREGROUND_BLUE);
+            printf("> 1. CREER UN COMPTE\n\n");
+            ResetConsoleColour(old_text_attributes);
+            print_spaces(columns_by_2 - 12);
+            printf("2. ACCEDER A MON ESPACE\n\n");
+            print_spaces(columns_by_2 - 12);
+            printf("3. QUITTER\n\n");
+            break;
+        case 2:
+            print_spaces(columns_by_2 - 12);
+            printf("1. CREER UN COMPTE\n\n");
+            print_spaces(columns_by_2 - 12);
+            SetConsoleTextAttribute(hStdout, FOREGROUND_INTENSITY | FOREGROUND_BLUE);
+            printf("> 2. ACCEDER A MON ESPACE\n\n");
+            ResetConsoleColour(old_text_attributes);
+            print_spaces(columns_by_2 - 12);
+            printf("3. QUITTER\n\n");
+            break;
+        case 3:
+            print_spaces(columns_by_2 - 12);
+            printf("1. CREER UN COMPTE\n\n");
+            print_spaces(columns_by_2 - 12);
+            printf("2. ACCEDER A MON ESPACE\n\n");
+            print_spaces(columns_by_2 - 12);
+            SetConsoleTextAttribute(hStdout, FOREGROUND_INTENSITY | FOREGROUND_BLUE);
+            printf("> 3. QUITTER\n\n");
+            ResetConsoleColour(old_text_attributes);
+            break;
+        }
 
         print_image(columns_by_2 - 26, "footer.txt");
-        printf("\n\n");
+        printf(DOUBLE_JUMP);
         print_spaces(columns_by_2 - 14);
         printf("\xDB\xDB\xDB SELECTIONNEZ UNE OPTION \xDB\xDB\xDB ");
-        print_spaces(columns_by_2 - 12);
-        scanf("%d", &opt);
 
-        if (opt == 1)
-        {
-            system("cls");
-            add_customer();
-        }
-        else if (opt == 2)
-        {
-            system("cls");
-            printf("\nVeuillez indiquer votre numero de compte: \t");
-            scanf("%s", &account_number);
-
-            if (check_account(account_number))
-            {
-                printf("\nMot de passe: \t");
-                scanf("%s", &password);
-
-                if ((check_password(account_number, password)))
-                {
-                    connected = 1;
-                    system("cls");
-
-                    while (connected == 1)
-                    {
-                        system("cls");
-                        struct customer current_customer = get_record(account_number);
-
-                        menu(current_customer);
-
-                        printf("\n\nContinuer la navigation ? [1/0] : \t");
-                        scanf("%d", &connected);
-                    }
-                }
-                else
-                {
-                    system("cls");
-                    printf("\nLe mot de passe est incorect!");
-                }
-            }
-            else
-            {
-                system("cls");
-                printf("\nCE COMMPTE N'EXISTE PAS!");
-            }
-        }
+        /* Clear input buffer */
+        FlushConsoleInputBuffer(hStdin);
     }
+
+    /* Reinistialiser les parametres de la console */
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), old_text_attributes);
+    // SetConsoleCursorInfo(hStdout, &old_cursor_info);
+
+    /* Clear console */
+    system("cls");
 }

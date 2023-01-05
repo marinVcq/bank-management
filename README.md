@@ -200,5 +200,11 @@ typedef struct _KEY_EVENT_RECORD {
 } KEY_EVENT_RECORD;
 
 l'idée est de recuperer l'attribut wVirtualKeyCode
+ici on s'interesse aux touches arrow donc aux keycodes:
+
+- VK_LEFT 0x25 LEFT ARROW key
+- VK_UP 0x26 UP ARROW key
+- VK_RIGHT 0x27 RIGHT ARROW key
+- VK_DOWN 0x28 DOWN ARROW key
 
 <https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes>

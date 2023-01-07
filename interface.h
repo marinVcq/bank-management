@@ -9,6 +9,10 @@
 
 extern HANDLE hStdout;
 extern HANDLE hStdin;
+extern HANDLE hScreenMutex; // "Screen update" mutex
+extern HANDLE menuThread;   // "Main thread update" mutex
+extern int menu_option;
+
 extern CONSOLE_SCREEN_BUFFER_INFO default_console_info;
 extern CONSOLE_CURSOR_INFO cursor_info;
 extern WORD default_text_attributes;
@@ -22,7 +26,9 @@ void print_date(void);
 void fordelay(int j);
 void print_image(int x_pos, char *fn);
 void ResetConsoleColour(WORD Attributes);
-void menu(char *name);
+
+void menu(void *name);
+
 void list_option(char opt_arr[][50], int selector, int size);
 void loading_screen();
 void restore_console();

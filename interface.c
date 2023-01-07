@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <time.h>
+#include <process.h>
 #include "interface.h"
+#include "customer.h"
 
 /* Define GLOBAL */
 CONSOLE_SCREEN_BUFFER_INFO default_console_info = {0};
@@ -247,8 +249,8 @@ void loading_screen()
 
     int columns_by_2 = MIDDLE_WIDTH;
     system("cls");
-    print_spaces(columns_by_2 - 24);
-    print_image(columns_by_2 - 24, "title-image.txt");
+    print_spaces(MIDDLE_WIDTH - 18);
+    print_image(MIDDLE_WIDTH - 18, "title-image.txt");
     printf("\n\n\n\n\n\n\n\n");
     print_spaces(columns_by_2 - 3);
     printf("LOADING");
@@ -279,69 +281,72 @@ void list_option(char opt_arr[][50], int selector, int size)
         }
     }
 }
+int menu_option = 1;
 
-void menu(char *name)
+void menu(void *name)
 {
+    loading_screen();
+
     char menu_option_arr[6][50] = {"EFFECTUER UN RETRAIT", "CONSULTER MON SOLDE", "EFFECTUER UN VIREMENT", "AFFICHER MES INFORMATIONS", "MODIFIER MON MOT DE PASSE", "TERMINER L'OPERATION EN COURS"};
-    int columns_by_2 = MIDDLE_WIDTH;
-    int selected_option = 1;
     int menu_is_running = 1;
 
     while (menu_is_running)
     {
+
+        // Wait for display to be available, then lock it.
+        WaitForSingleObject(hScreenMutex, INFINITE);
+
+        system("cls");
+        print_image(MIDDLE_WIDTH - 24, "title-image.txt");
+        line_break(2);
+        print_color("\xB2\xB2\xB2\xB2 BIENVENUE DANS VOTRE ESPACE \xB2\xB2\xB2\xB2", "YELLOW", MIDDLE_WIDTH - 17);
+        line_break(3);
+        print_color("\xB2\xB2\xB2\xB2 EFFECTUER UNE OPERATION \xB2\xB2\xB2\xB2", "YELLOW", MIDDLE_WIDTH - 17);
+        line_break(2);
+        list_option(menu_option_arr, menu_option, 6);
+        print_color("\xB2\xB2\xB2\xB2 SELECTIONNEZ UNE OPTION \xB2\xB2\xB2\xB2", "YELLOW", MIDDLE_WIDTH - 17);
+
+        // Release screen mutex
+        ReleaseMutex(hScreenMutex);
+
+        rc.Event.KeyEvent.wVirtualScanCode = 0;
+        rc.Event.KeyEvent.wVirtualKeyCode = 0;
         ReadConsoleInputW(hStdin, &rc, 1, &dwRead);
 
         if (rc.Event.KeyEvent.bKeyDown == FALSE)
         {
+
             switch (rc.Event.KeyEvent.wVirtualKeyCode)
             {
             case 0x51:
-                menu_is_running = 0;
+                // menu_is_running = 0;
                 break;
             case VK_UP:
-                if (selected_option - 1 >= 1)
+                if (menu_option - 1 >= 1)
                 {
-                    selected_option -= 1;
+                    menu_option -= 1;
                 }
                 else
                 {
-                    selected_option = 6;
+                    menu_option = 6;
                 }
                 break;
             case VK_DOWN:
-                if (selected_option + 1 <= 6)
+                if (menu_option + 1 <= 6)
                 {
-                    selected_option += 1;
+                    menu_option += 1;
                 }
                 else
                 {
-                    selected_option = 1;
+                    menu_option = 1;
                 }
                 break;
             case VK_RETURN:
-                // handle_selection(selected_option);
+                HANDLE h_tr = (HANDLE)_beginthread(handle_operation, 0, (void *)(uintptr_t)menu_option);
+                WaitForSingleObject(h_tr, INFINITE);
                 break;
             }
         }
-
-        /* Clear the screen */
-        system("cls");
-
-        /* Interface textuelle */
-        print_image(columns_by_2 - 24, "title-image.txt");
-
-        printf("\n\n");
-        print_spaces(columns_by_2 - 16);
-        printf("BIENCENUE DANS VOTRE ESPACE %s \n\n", name);
-
-        print_spaces(columns_by_2 - 15);
-        printf("\xB2\xB2\xB2\xB2 EFFECTUER UNE OPERATION \xB2\xB2\xB2\xB2\n\n");
-
-        /* Display menu */
-        list_option(menu_option_arr, selected_option, 6);
-
-        print_spaces(columns_by_2 - 14);
-        printf("\xDB\xDB\xDB SELECTIONNEZ UNE OPTION \xDB\xDB\xDB ");
     }
 }
 

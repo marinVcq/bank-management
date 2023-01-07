@@ -4,6 +4,8 @@
 #define NAME_SIZE 50
 #define PHONE_SIZE 50
 
+#define MAX_CUSTOMER_THREADS 2
+
 /* Customer data structure */
 struct customer
 {
@@ -19,11 +21,19 @@ extern char account_number[ACCOUNT_NO_SIZE];
 extern char password[PASSWORD_SIZE];
 extern int connected;
 
+// Handle for customer operation
+extern HANDLE h_ctm_threads[MAX_CUSTOMER_THREADS];
+extern int customer_threads;
+
+void create_account(void *arg);
+void login_account(void *arg);
+
 int check_account(char customer_account_no[ACCOUNT_NO_SIZE]);
 int check_password(char customer_account_no[ACCOUNT_NO_SIZE], char password[PASSWORD_SIZE]);
-void customer_info(char customer_account_no[ACCOUNT_NO_SIZE]);
-struct customer get_record(char customer_account_no[ACCOUNT_NO_SIZE]);
-void create_account(void);
-int withdraw(char customer_account_no[ACCOUNT_NO_SIZE]);
-int get_balance(char customer_account_no[ACCOUNT_NO_SIZE]);
-void login_account(void);
+
+// Account operations
+void handle_operation(void *selector);
+void customer_info_get(void *customer_account_no);
+struct customer record_get(char customer_account_no[ACCOUNT_NO_SIZE]);
+void withdraw_process(void *customer_account_no);
+int balance_get(void *customer_account_no);

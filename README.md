@@ -208,3 +208,19 @@ ici on s'interesse aux touches arrow donc aux keycodes:
 - VK_DOWN 0x28 DOWN ARROW key
 
 <https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes>
+
+## Threads tips and useful info
+
+Every waitable object has a boolean value attached to it named the signalled state.
+
+- if an object is signalled the wait function will NOT wait for it
+- if an object is non-signalled the wait function WILL wait for it
+
+with the WIN32 API we use WaitForSingleObject() that will wait untils the specified object is in the signaled state
+
+TO NOTICE: 
+
+- A mutex is signalled when it is not owned
+- AThread is signalled when it has finished
+- A semaphore is signalled when its count is greater than 0
+- A Waitable timer is signalled when it has exprired

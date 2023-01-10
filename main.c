@@ -22,17 +22,21 @@ void app_shutdown(void);
 int main()
 {
 
-    loading_screen();
-
-    char main_option_arr[3][50] = {"CREER UN COMPTE", "ACCEDER A MON ESPACE", "QUITTER"};
-    int selected_option = 1;
+    char main_opt[3][50] = {"CREER UN COMPTE", "ACCEDER A MON ESPACE", "QUITTER"};
+    int opt = 1;
 
     // Setup console
-    setup_console();
+    HANDLE h_setup = (HANDLE)_beginthread(setup_console, 0, NULL);
+    while (is_setup == FALSE)
+    {
+        loading();
+    }
+    WaitForSingleObject(h_setup, INFINITE);
+    CloseHandle(h_setup);
 
     // Create the mutexes and reset thread count.
-    hScreenMutex = CreateMutexW(NULL, FALSE, NULL); // Cleared
-    hRunMutex = CreateMutexW(NULL, TRUE, NULL);     // Set
+    hScreenMutex = CreateMutexW(NULL, FALSE, NULL);
+    hRunMutex = CreateMutexW(NULL, TRUE, NULL);
 
     while (exit_status == 0)
     {
@@ -40,15 +44,15 @@ int main()
         // Wait for display to be available, then lock it.
         WaitForSingleObject(hScreenMutex, INFINITE);
 
-        // Display Interface
+        // Display text iànterface
         system("cls");
-        print_image(40 - 24, "title-image.txt");
+        print_image(MIDDLE_WIDTH - 24, "title-image.txt");
+        line_break(2);
+        print_color("\xB0\xB0\xB0\xB0\xB0\xB0  EFFECTUER UNE OPERATION  \xB0\xB0\xB0\xB0\xB0\xB0", "YELLOW", MIDDLE_WIDTH - 20);
+        line_break(3);
+        list_option(main_opt, opt, 3);
         line_break(4);
-        print_color("\xB2\xB2\xB2\xB2 EFFECTUER UNE OPERATION \xB2\xB2\xB2\xB2\n\n", "YELLOW", MIDDLE_WIDTH - 17);
-        line_break(2);
-        list_option(main_option_arr, selected_option, 3);
-        line_break(2);
-        print_color("\xB2\xB2\xB2\xB2 PRESS ENTER TO SELECT \xB2\xB2\xB2\xB2\n\n", "YELLOW", MIDDLE_WIDTH - 16);
+        print_color("Press ENTER to select...", "WHITE", MIDDLE_WIDTH);
 
         // Release
         ReleaseMutex(hScreenMutex);
@@ -56,7 +60,7 @@ int main()
         // Event Handling
         ReadConsoleInputW(hStdin, &rc, 1, &dwRead);
 
-        if (rc.Event.KeyEvent.bKeyDown == FALSE)
+        if (rc.Event.KeyEvent.bKeyDown == TRUE)
         {
             switch (rc.Event.KeyEvent.wVirtualKeyCode)
             {
@@ -64,19 +68,19 @@ int main()
                 app_shutdown();
                 break;
             case VK_UP:
-                if (selected_option - 1 >= 1)
-                    selected_option -= 1;
+                if (opt - 1 >= 1)
+                    opt -= 1;
                 else
-                    selected_option = 3;
+                    opt = 3;
                 break;
             case VK_DOWN:
-                if (selected_option + 1 <= 3)
-                    selected_option += 1;
+                if (opt + 1 <= 3)
+                    opt += 1;
                 else
-                    selected_option = 1;
+                    opt = 1;
                 break;
             case VK_RETURN:
-                handle_selection(selected_option);
+                handle_selection(opt);
                 break;
             }
         }
@@ -122,7 +126,6 @@ void handle_selection(int selector)
 void app_shutdown()
 {
     WaitForMultipleObjects(ThreadNr, hThreads, TRUE, INFINITE);
-    exit_status = 1;
     for (int i = 0; i < ThreadNr; i++)
     {
         if (hThreads[i])
@@ -134,4 +137,5 @@ void app_shutdown()
         CloseHandle(hRunMutex);
 
     system("cls");
+    exit_status = 1;
 }

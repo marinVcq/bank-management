@@ -36,4 +36,7 @@ void handle_operation(void *selector);
 void customer_info_get(void *customer_account_no);
 struct customer record_get(char customer_account_no[ACCOUNT_NO_SIZE]);
 void withdraw_process(void *customer_account_no);
-int balance_get(void *customer_account_no);
+void balance_get(void *customer_account_no);
+void transfer_process(void *customer_account_no);
+
+BOOL update_information(struct customer customer);

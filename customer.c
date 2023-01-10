@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <conio.h>
 #include <windows.h>
 #include <process.h>
@@ -17,9 +18,8 @@ int customer_threads = 0;
 
 void create_account(void *arg)
 {
-    loading_screen();
-
     struct customer new_customer;
+    char customer_label[4][25] = {"NUMERO DE COMPTE:", "NOM DE FAMILLE:", "NUMERO DE TEL:", "MOT DE PASSE:"};
     char path[PATH_SIZE] = "./client/";
     char temp[ACCOUNT_NO_SIZE];
     FILE *file;
@@ -28,21 +28,23 @@ void create_account(void *arg)
     WaitForSingleObject(hScreenMutex, INFINITE);
 
     /* Display */
-    print_image(40 - 24, "title-image.txt");
+    system("cls");
+    print_image(MIDDLE_WIDTH - 24, "title-image.txt");
+    line_break(2);
+    print_color("\xB0\xB0\xB0\xB0\xB0\xB0  AJOUTER UN COMPTE  \xB0\xB0\xB0\xB0\xB0\xB0", "YELLOW", MIDDLE_WIDTH - 18);
     line_break(3);
-    print_color("\xB2\xB2\xB2\xB2 AJOUTER UN COMPTE \xB2\xB2\xB2\xB2\n\n", "YELLOW", MIDDLE_WIDTH - 17);
-    line_break(3);
-    print_color("NUMERO DE COMPTE: \t", "YELLOW", MIDDLE_WIDTH - 12);
+    print_color("NUMERO DE COMPTE: \t", "YELLOW", MIDDLE_WIDTH - 13);
     scanf("%s", new_customer.account_number);
     line_break(1);
-    print_color("NOM DE FAMILLE: \t", "YELLOW", MIDDLE_WIDTH - 12);
+    print_color("NOM DE FAMILLE: \t", "YELLOW", MIDDLE_WIDTH - 13);
     scanf("%s", new_customer.name);
     line_break(1);
-    print_color("NUMERO DE TEL: \t", "YELLOW", MIDDLE_WIDTH - 12);
+    print_color("NUMERO DE TEL: \t", "YELLOW", MIDDLE_WIDTH - 13);
     scanf("%s", new_customer.phone_number);
     line_break(1);
-    print_color("MOT DE PASSE: \t", "YELLOW", MIDDLE_WIDTH - 12);
+    print_color("MOT DE PASSE: \t", "YELLOW", MIDDLE_WIDTH - 13);
     scanf("%s", new_customer.password);
+
     new_customer.balance = 0;
     strcpy(temp, new_customer.account_number);
     strcat(path, strcat(temp, ".dat"));
@@ -55,22 +57,67 @@ void create_account(void *arg)
         fwrite(&new_customer, sizeof(struct customer), 1, file);
         if (fwrite != 0)
         {
-            line_break(3);
-            print_color("CREATE ACCOUNT SUCCESFULLY!\n", "GREEN", MIDDLE_WIDTH - 15);
+            // Wait for display to be available, then lock it.
+            WaitForSingleObject(hScreenMutex, INFINITE);
+
+            system("cls");
+            print_image(MIDDLE_WIDTH - 24, "title-image.txt");
+            line_break(2);
+            print_color("\xB0\xB0\xB0\xB0\xB0\xB0  CREATE ACCOUNT SUCCESFULLY  \xB0\xB0\xB0\xB0\xB0\xB0", "GREEN", MIDDLE_WIDTH - 21);
+            line_break(2);
+            print_color("~~~~~~~~~~ ACCOUNT INFORMATION ~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 21);
+            line_break(2);
+            print_spaces(MIDDLE_WIDTH - 21);
+            printf("ACCOUNT NUMBER: \t\t %s", new_customer.account_number);
+            line_break(2);
+            print_spaces(MIDDLE_WIDTH - 21);
+            printf("ACCOUNT OWNER: \t\t %s", new_customer.name);
+            line_break(2);
+            print_spaces(MIDDLE_WIDTH - 21);
+            printf("PHONE NUMBER: \t\t %s", new_customer.phone_number);
+            line_break(2);
+            print_spaces(MIDDLE_WIDTH - 21);
+            printf("BALANCE: \t\t\t %f", new_customer.balance);
+            line_break(2);
+            print_color("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 21);
+            line_break(2);
+            print_color("Press key to continue...", "WHITE", MIDDLE_WIDTH);
+            _getch();
             fclose(file);
-            customer_info_get(new_customer.account_number);
-            line_break(3);
-            print_color("Press key to return to menu...\n", "WHITE", MIDDLE_WIDTH - 15);
-            getch();
+
+            // Unlock screen mutex & terminate
+            ReleaseMutex(hScreenMutex);
+            _endthread();
         }
         else
         {
-            fprintf(stderr, "\nErreur dans la création du compte\n");
+            // Wait for display to be available, then lock it.
+            WaitForSingleObject(hScreenMutex, INFINITE);
+
+            line_break(3);
+            print_color("AN ERROR OCCURS!", "RED", MIDDLE_WIDTH - 12);
+            line_break(3);
+            print_color("Press key to go back...", "WHITE", MIDDLE_WIDTH);
+            // Unlock screen mutex & terminate
+            ReleaseMutex(hScreenMutex);
+            _getch();
+            _endthread();
         }
     }
     else
     {
-        fprintf(stderr, "\nErreur dans la création du compte\n");
+        // Wait for display to be available, then lock it.
+        WaitForSingleObject(hScreenMutex, INFINITE);
+
+        line_break(3);
+        print_color("AN ERROR OCCURS!", "RED", MIDDLE_WIDTH - 12);
+        line_break(3);
+        print_color("Press key to go back...", "WHITE", MIDDLE_WIDTH);
+
+        // Unlock screen mutex & terminate
+        ReleaseMutex(hScreenMutex);
+        _getch();
+        _endthread();
     }
 }
 
@@ -81,23 +128,41 @@ void login_account(void *arg)
 
     system("cls");
     print_image(MIDDLE_WIDTH - 24, "title-image.txt");
-    line_break(3);
-    print_color("\xB2\xB2\xB2\xB2 SE CONNECTER \xB2\xB2\xB2\xB2", "YELLOW", MIDDLE_WIDTH - 13);
     line_break(2);
-    print_color("\xDA\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xBF", "WHITE", MIDDLE_WIDTH - 13);
+    print_color("\xB0\xB0\xB0\xB0\xB0\xB0  SE CONNECTER  \xB0\xB0\xB0\xB0\xB0\xB0", "YELLOW", MIDDLE_WIDTH - 14);
     line_break(3);
-    print_color("NUMERO DE COMPTE: \t", "WHITE", MIDDLE_WIDTH - 13);
+    print_color("NUMERO DE COMPTE: \t", "WHITE", MIDDLE_WIDTH - 14);
     scanf("%s", &account_number);
 
     if (check_account(account_number))
     {
-        line_break(3);
-        print_color("MOT DE PASSE: \t", "WHITE", MIDDLE_WIDTH - 13);
+        line_break(2);
+        print_color("MOT DE PASSE: \t", "WHITE", MIDDLE_WIDTH - 14);
 
         // Unlock screen mutex
         ReleaseMutex(hScreenMutex);
 
-        scanf("%s", &password);
+        // scanf("%s", &password);
+
+        int inc = 0;
+        char a;
+        BOOL Continue = 1;
+
+        while (Continue)
+        {
+            a = getch();
+            if (a == 13)
+            {
+                Continue = 0;
+                password[inc] = 0;
+            }
+            else
+            {
+                password[inc] = a;
+                printf("*");
+                inc++;
+            }
+        };
 
         if ((check_password(account_number, password)))
         {
@@ -108,20 +173,20 @@ void login_account(void *arg)
         }
         else
         {
-            line_break(2);
-            print_color("MOT DE PASSE INCORRECT!", "RED", MIDDLE_WIDTH - 17);
-            line_break(2);
-            printf("Appuyer sur une touche pour quitter...");
-            getch();
+            line_break(3);
+            print_color("INCORRECT PASSWORD!", "RED", MIDDLE_WIDTH - 10);
+            line_break(3);
+            print_color("Press ENTER to go back...", "WHITE", MIDDLE_WIDTH);
+            _getch();
         }
     }
     else
     {
-        line_break(2);
-        print_color("IDENTIFIANT INCORRECT!", "RED", MIDDLE_WIDTH - 17);
-        line_break(2);
-        printf("Appuyer sur une touche pour quitter...");
-        getch();
+        line_break(3);
+        print_color("INCORECT ACCOUNT NUMBER!", "RED", MIDDLE_WIDTH - 12);
+        line_break(3);
+        print_color("Press ENTER to go back...", "WHITE", MIDDLE_WIDTH);
+        _getch();
     }
 }
 
@@ -177,23 +242,22 @@ void handle_operation(void *selector)
         h_ctm_threads[customer_threads] = (HANDLE)_beginthread(withdraw_process, 0, (void *)account_number);
         WaitForSingleObject(h_ctm_threads[customer_threads], INFINITE);
         --customer_threads;
-        ResumeThread(menuThread);
         break;
     case 2:
         ++customer_threads;
-        h_ctm_threads[customer_threads] = (HANDLE)_beginthread(customer_info_get, 0, (void *)account_number);
+        h_ctm_threads[customer_threads] = (HANDLE)_beginthread(balance_get, 0, (void *)account_number);
         WaitForSingleObject(h_ctm_threads[customer_threads], INFINITE);
         --customer_threads;
         break;
     case 3:
         ++customer_threads;
-        h_ctm_threads[customer_threads] = (HANDLE)_beginthread(customer_info_get, 0, (void *)account_number);
+        h_ctm_threads[customer_threads] = (HANDLE)_beginthread(transfer_process, 0, (void *)account_number);
         WaitForSingleObject(h_ctm_threads[customer_threads], INFINITE);
         --customer_threads;
         break;
     case 4:
         ++customer_threads;
-        h_ctm_threads[customer_threads] = (HANDLE)_beginthread(withdraw_process, 0, (void *)account_number);
+        h_ctm_threads[customer_threads] = (HANDLE)_beginthread(customer_info_get, 0, (void *)account_number);
         WaitForSingleObject(h_ctm_threads[customer_threads], INFINITE);
         --customer_threads;
         break;
@@ -211,7 +275,7 @@ void handle_operation(void *selector)
 
 void withdraw_process(void *customer_account_no)
 {
-    /* get up-to-date recorded information */
+    // Get up to date information
     char temp[ACCOUNT_NO_SIZE];
     struct customer u;
     char path[PATH_SIZE] = "./client/";
@@ -227,35 +291,200 @@ void withdraw_process(void *customer_account_no)
         fclose(file);
     }
 
-    // Display
+    // Display text iànterface
     system("cls");
     print_image(MIDDLE_WIDTH - 24, "title-image.txt");
-    line_break(3);
-    print_color("\xB2\xB2\xB2\xB2 EFFECTUER UN RETRAIT \xB2\xB2\xB2\xB2", "YELLOW", MIDDLE_WIDTH - 17);
     line_break(2);
-    print_color("MONTANT DU RETRAIT: \t", "YELLOW", MIDDLE_WIDTH - 17);
+    print_color("\xB0\xB0\xB0\xB0\xB0\xB0  EFFECTUER UN RETRAIT  \xB0\xB0\xB0\xB0\xB0\xB0", "YELLOW", MIDDLE_WIDTH - 18);
+    line_break(3);
+    print_color("MONTANT DU RETRAIT: \t", "WHITE", MIDDLE_WIDTH - 17);
     scanf("%f", &amount);
-    u.balance -= amount;
 
-    // Update recorded information
-    if ((file = fopen(path, "w")))
+    // Check for balance
+    if (u.balance >= amount)
     {
-        fwrite(&u, sizeof(struct customer), 1, file);
-        if (fwrite != NULL)
+        u.balance -= amount;
+
+        // Update recorded information
+        if ((file = fopen(path, "w")))
         {
+            fwrite(&u, sizeof(struct customer), 1, file);
+            if (fwrite != NULL)
+            {
+                fclose(file);
+                line_break(3);
+                print_color("RETRAIT EFFECTUE AVEC SUCCES", "GREEN", MIDDLE_WIDTH - 17);
+                line_break(2);
+
+                // Display information
+                print_color("~~~~~~~~~~ INFORMATION ~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 18);
+                line_break(2);
+                print_spaces(MIDDLE_WIDTH - 18);
+                printf("ACCOUNT NUMBER: \t\t %s", u.account_number);
+                line_break(2);
+                print_spaces(MIDDLE_WIDTH - 18);
+                printf("ACCOUNT OWNER: \t\t %s", u.name);
+                line_break(2);
+                print_spaces(MIDDLE_WIDTH - 18);
+                printf("BALANCE: \t\t\t %f", u.balance);
+                line_break(2);
+                print_color("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 18);
+                line_break(2);
+                print_color("Press key to continue...", "WHITE", MIDDLE_WIDTH);
+                _getch();
+            }
+        }
+    }
+    else
+    {
+        line_break(3);
+        print_color("VOS CAPACITE DE RETRAIT SONT INSUFISANTES", "RED", MIDDLE_WIDTH - 21);
+        line_break(3);
+        print_color("~~~~~~~~~~ INFORMATION ~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 18);
+        line_break(2);
+        print_spaces(MIDDLE_WIDTH - 18);
+        printf("ACCOUNT NUMBER: \t\t %s", u.account_number);
+        line_break(2);
+        print_spaces(MIDDLE_WIDTH - 18);
+        printf("ACCOUNT OWNER: \t\t %s", u.name);
+        line_break(2);
+        print_spaces(MIDDLE_WIDTH - 18);
+        printf("BALANCE: \t\t\t %f", u.balance);
+        line_break(2);
+        print_color("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 18);
+        line_break(2);
+        print_color("Press key to continue...", "WHITE", MIDDLE_WIDTH);
+        _getch();
+    }
+}
+
+void transfer_process(void *customer_account_no)
+{
+    // Get up to date information
+    char temp[ACCOUNT_NO_SIZE];
+    struct customer u;
+    struct customer receiver;
+    char path[PATH_SIZE] = "./client/";
+    float amount = 0;
+    FILE *file;
+    char dest[ACCOUNT_NO_SIZE];
+
+    // get issuer's information
+    strcpy(temp, customer_account_no);
+    strcat(path, strcat(temp, ".dat"));
+
+    if ((file = fopen(path, "r")))
+    {
+        fread(&u, sizeof(struct customer), 1, file);
+        fclose(file);
+    }
+
+    system("cls");
+    print_image(MIDDLE_WIDTH - 24, "title-image.txt");
+    line_break(2);
+    print_color("\xB0\xB0\xB0\xB0\xB0\xB0  EFFECTUER UN VIREMENT  \xB0\xB0\xB0\xB0\xB0\xB0", "YELLOW", MIDDLE_WIDTH - 18);
+    line_break(3);
+    print_color("MONTANT DU VIREMENT: \t", "WHITE", MIDDLE_WIDTH - 17);
+    scanf("%f", &amount);
+    line_break(2);
+    print_color("NUMERO DE COMPTE DESTINATAIRE: \t", "WHITE", MIDDLE_WIDTH - 17);
+    scanf("%s", &dest);
+
+    // Check for issuer's transfer capabilities
+    if (amount > u.balance)
+    {
+        line_break(3);
+        print_color("VOS CAPACITE DE RETRAIT SONT INSUFISANTES", "RED", MIDDLE_WIDTH - 21);
+        line_break(3);
+        print_color("~~~~~~~~~~ INFORMATION ~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 18);
+        line_break(2);
+        print_spaces(MIDDLE_WIDTH - 18);
+        printf("ACCOUNT NUMBER: \t\t %s", u.account_number);
+        line_break(2);
+        print_spaces(MIDDLE_WIDTH - 18);
+        printf("ACCOUNT OWNER: \t\t %s", u.name);
+        line_break(2);
+        print_spaces(MIDDLE_WIDTH - 18);
+        printf("BALANCE: \t\t\t %f", u.balance);
+        line_break(2);
+        print_color("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 18);
+        line_break(2);
+        print_color("Press key to continue...", "WHITE", MIDDLE_WIDTH);
+        _getch();
+    }
+    else
+    {
+        // Get receiver account information
+
+        strcpy(temp, "");
+        strcpy(path, "");
+        strcpy(path, "./client/");
+        strcpy(temp, dest);
+        strcat(path, strcat(temp, ".dat"));
+
+        printf("%s", path);
+        getch();
+
+        if ((file = fopen(path, "r")))
+        {
+            fread(&receiver, sizeof(struct customer), 1, file);
             fclose(file);
-            system("cls");
-            print_image(MIDDLE_WIDTH - 24, "title-image.txt");
-            line_break(3);
-            print_color("RETRAIT EFFECTUE AVEC SUCCES", "GREEN", MIDDLE_WIDTH - 17);
-            line_break(2);
-            customer_info_get(u.account_number);
+
+            // Do the transfer update information for both accounts
+            receiver.balance += amount;
+            u.balance -= amount;
+
+            if (update_information(receiver) && update_information(u))
+            {
+                line_break(3);
+                print_color("VIREMENT EFFECTUE AVEC SUCCES", "GREEN", MIDDLE_WIDTH - 17);
+                line_break(2);
+                print_color("Press key to continue...", "WHITE", MIDDLE_WIDTH);
+                _getch();
+            }
+            else
+            {
+                line_break(3);
+                print_color("UNE ERREURE EST SURVENUE", "RED", MIDDLE_WIDTH - 21);
+                line_break(3);
+                print_color("Press key to continue...", "WHITE", MIDDLE_WIDTH);
+                _getch();
+            }
         }
         else
         {
-            fprintf(stderr, "\nRetrait impossible\n");
+            line_break(3);
+            print_color("LE COMPTE DESTINATAIRE N'EXISTE PAS", "RED", MIDDLE_WIDTH - 21);
+            line_break(3);
+            print_color("Press key to continue...", "WHITE", MIDDLE_WIDTH);
+            _getch();
         }
     }
+}
+
+BOOL update_information(struct customer customer)
+{
+
+    char temp[ACCOUNT_NO_SIZE];
+    char path[PATH_SIZE] = "./client/";
+    FILE *file;
+
+    strcpy(temp, "");
+    strcpy(temp, customer.account_number);
+    strcat(path, strcat(temp, ".dat"));
+
+    if ((file = fopen(path, "w")))
+    {
+        fwrite(&customer, sizeof(struct customer), 1, file);
+        if (fwrite != NULL)
+        {
+            fclose(file);
+            return TRUE;
+        }
+        else
+            return FALSE;
+    }
+    return FALSE;
 }
 
 void customer_info_get(void *customer_account_no)
@@ -274,22 +503,24 @@ void customer_info_get(void *customer_account_no)
         fclose(file);
     }
 
-    line_break(3);
-    print_color("~~~~~~~~~~ ACCOUNT INFORMATION ~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 20);
+    system("cls");
+    print_image(MIDDLE_WIDTH - 24, "title-image.txt");
     line_break(2);
-    print_spaces(MIDDLE_WIDTH - 20);
+    print_color("~~~~~~~~~~ ACCOUNT INFORMATION ~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 21);
+    line_break(2);
+    print_spaces(MIDDLE_WIDTH - 21);
     printf("ACCOUNT NUMBER: \t\t %s", u.account_number);
     line_break(2);
-    print_spaces(MIDDLE_WIDTH - 20);
+    print_spaces(MIDDLE_WIDTH - 21);
     printf("ACCOUNT OWNER: \t\t %s", u.name);
     line_break(2);
-    print_spaces(MIDDLE_WIDTH - 20);
+    print_spaces(MIDDLE_WIDTH - 21);
     printf("PHONE NUMBER: \t\t %s", u.phone_number);
     line_break(2);
-    print_spaces(MIDDLE_WIDTH - 20);
+    print_spaces(MIDDLE_WIDTH - 21);
     printf("BALANCE: \t\t\t %f", u.balance);
     line_break(2);
-    print_color("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 20);
+    print_color("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 21);
     line_break(2);
     print_color("Press key to continue...", "WHITE", MIDDLE_WIDTH);
     _getch();
@@ -318,7 +549,7 @@ struct customer record_get(char customer_account_no[ACCOUNT_NO_SIZE])
     }
 }
 
-int balance_get(void *customer_account_no)
+void balance_get(void *customer_account_no)
 {
     /* get up-to-date recorded information */
     char temp[ACCOUNT_NO_SIZE];
@@ -333,12 +564,24 @@ int balance_get(void *customer_account_no)
     {
         fread(&u, sizeof(struct customer), 1, file);
         fclose(file);
-        printf("\nVotre solde: %f", u.balance);
-        return 1;
+
+        // Display
+        system("cls");
+        print_image(MIDDLE_WIDTH - 24, "title-image.txt");
+        line_break(2);
+        print_color("~~~~~~~~~~ CONSULTER MON SOLDE ~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 22);
+        line_break(2);
+        print_spaces(MIDDLE_WIDTH - 22);
+        printf("ACCOUNT OWNER: \t\t %s", u.name);
+        line_break(2);
+        print_spaces(MIDDLE_WIDTH - 22);
+        printf("BALANCE: \t\t\t %f", u.balance);
+        line_break(2);
+        print_color("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "YELLOW", MIDDLE_WIDTH - 22);
+        line_break(3);
+        print_color("Press key to continue...", "WHITE", MIDDLE_WIDTH);
+        _getch();
     }
     else
-    {
         fprintf(stderr, "Solde indisponible\n");
-        return 0;
-    }
 }
